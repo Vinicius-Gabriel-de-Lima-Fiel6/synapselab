@@ -1,65 +1,35 @@
-import os
-from fastapi import FastAPI, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from supabase import create_client, Client
-from typing import List
+import auth_db as db
 
-# Importe suas funções originais do auth_db.py
-import auth_db as db 
+app = FastAPI()
 
-app = FastAPI(title="LabSmartAI API")
-
-# Libera o acesso para o seu frontend React
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Configuração Supabase (Substitua ou use Env Vars na Vercel)
-SUPABASE_URL = "SUA_URL_AQUI"
-SUPABASE_KEY = "SUA_KEY_AQUI"
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-class LoginRequest(BaseModel):
+# Modelos para receber os dados do React
+class LoginSchema(BaseModel):
     email: str
     password: str
 
-@app.post("/auth/login")
-async def login(req: LoginRequest):
-    user = db.buscar_usuario_por_email(req.email)
-    if user and db.verificar_senha(req.password, user['password_hash']):
-        return {
-            "status": "success",
-            "user": {
-                "username": user['username'],
-                "role": user.get('role', 'Visualizador'),
-                "org_name": user.get('org_name')
-            }
-        }
-    raise HTTPException(status_code=401, detail="Dados incorretos.")
+class SignupSchema(BaseModel):
+    username: str
+    email: str
+    password: str
+    org_name: str
+    org_id: str
+    role: str
 
-@app.get("/dashboard/metrics")
-async def get_metrics(org_name: str):
-    try:
-        res_sub = supabase.table("substancias").select("quantidade").eq("org_name", org_name).execute()
-        total_itens = sum([i['quantidade'] for i in res_sub.data]) if res_sub.data else 0
-        
-        res_eq = supabase.table("equipamentos").select("id", count="exact").eq("org_name", org_name).execute()
-        total_equip = res_eq.count if res_eq.count else 0
-        
-        return {
-            "total_itens": total_itens,
-            "total_equipamentos": total_equip,
-            "total_registros": len(res_sub.data)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/login")
+async def login_endpoint(data: LoginSchema):
+    user = db.buscar_usuario_por_email(data.email)
+    if user and db.verificar_senha(data.password, user['password_hash']):
+        return {"status": "success", "user": user}
+    raise HTTPException(status_code=401, detail="Credenciais Inválidas")
 
-@app.get("/data/inventory")
-async def get_inventory(org_name: str):
-    res = supabase.table("substancias").select("*").eq("org_name", org_name).execute()
-    return res.data
+@app.post("/register")
+async def register_endpoint(data: SignupSchema):
+    success, msg = db.cadastrar_usuario(
+        data.username, data.email, data.password, 
+        data.org_name, data.role, data.org_id
+    )
+    if success:
+        return {"status": "success", "message": msg}
+    raise HTTPException(status_code=400, detail=msg)
