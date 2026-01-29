@@ -3,9 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from supabase import create_client, Client
-import auth_db as db
-from calculadora import calcular_analitica_fiel, calcular_termo_fiel #
-from motores_quimicos import MotorCalculoAvancado #
+import auth_db as db 
 
 app = FastAPI()
 
@@ -61,21 +59,3 @@ async def get_metrics(org_name: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-@app.post("/api/calculadora")
-async def processar_calculo(req: CalculoRequest):
-    # Tenta na analítica, se não encontrar, tenta na termo
-    res = calcular_analitica_fiel(req.operacao, req.dados)
-    if res == 0.0:
-        res = calcular_termo_fiel(req.operacao, req.dados)
-    return {"resultado": res}
-
-# ROTA DA IA (ESTEQUIOMETRIA)
-@app.post("/api/ia_estequiometria")
-async def processar_ia(req: dict):
-    reac, prod = req.get("reagentes"), req.get("produtos")
-    reac_bal, prod_bal, erro = motor_ia.balancear_e_resolver(reac, prod) #
-    if erro: return {"erro": erro}
-    
-    eq_completa = f"{reac_bal} -> {prod_bal}"
-    laudo = motor_ia.consultoria_ia(eq_completa, "N/A", "N/A") #
-    return {"equacao": eq_completa, "laudo": laudo}
