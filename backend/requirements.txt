@@ -6,11 +6,7 @@ supabase
 postgrest
 bcrypt
 chempy
-numpy
-pandas
-numexpr
 requests
-pillow
 fpdf
 openpyxl
 xlsxwriter
