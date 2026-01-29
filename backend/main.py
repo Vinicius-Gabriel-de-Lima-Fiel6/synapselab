@@ -1,11 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
+import calculadora as calc
+from motores_quimicos import MotorCalculoAvancado
 
 app = FastAPI()
+motor = MotorCalculoAvancado()
 
-# Configuração de CORS para permitir que o React acesse a API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,38 +14,54 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Modelos de Dados
-class LoginRequest(BaseModel):
-    email: str
-    password: str
+class QuimicaRequest(BaseModel):
+    operacao: str
+    dados: dict
 
-# Rota de Login (Restaurada para o básico funcional)
+@app.get("/")
+async def health_check():
+    return {"status": "SynapseLab Backend Online", "model": "llama-3.3-70b-versatile"}
+
 @app.post("/auth/login")
-async def login(req: LoginRequest):
-    # Aqui você pode manter sua lógica de conferência com o banco ou estática
-    if req.email == "admin@synapselab.com" and req.password == "admin123":
+async def login(req: dict):
+    if req.get("email") == "admin@synapselab.com" and req.get("password") == "admin123":
         return {
-            "logado": True,
+            "logado": True, 
             "user_data": {
-                "username": "Administrador",
-                "org_name": "SynapseLab Core",
-                "role": "Diretor Técnico"
+                "username": "Admin Master", 
+                "org_name": "SynapseLab", 
+                "role": "Diretor"
             }
         }
-    # Caso tenha lógica de banco, ela entraria aqui. 
-    # Para teste de restauração, use o admin acima.
     return {"logado": False}
 
-# Rota de Métricas do Dashboard
-@app.get("/dashboard/metrics")
-async def get_metrics(org_name: str):
-    return {
-        "total_itens": 1250,
-        "total_equipamentos": 42,
-        "total_analises": 856
-    }
+@app.post("/api/analitica")
+async def rota_analitica(req: QuimicaRequest):
+    resultado = calc.calcular_analitica_fiel(req.operacao, req.dados)
+    return {"resultado": f"{resultado:.4f}"}
 
-# Rota de Saúde do Sistema
-@app.get("/")
-async def root():
-    return {"status": "Online", "sistema": "SynapseLab"}
+@app.post("/api/termodinamica")
+async def rota_termo(req: QuimicaRequest):
+    resultado = calc.calcular_termo_fiel(req.operacao, req.dados)
+    return {"resultado": f"{resultado:.4f}"}
+
+@app.get("/api/conversao")
+async def rota_conversao(tipo: str, valor: float):
+    resultado = calc.converter_si_fiel(tipo, valor)
+    return {"resultado": f"{resultado:.4f}"}
+
+@app.post("/api/estequiometria/analisar")
+async def analisar_ia(req: dict):
+    reac = req.get("reagentes")
+    prod = req.get("produtos")
+    rb, pb, err = motor.balancear_e_resolver(reac, prod)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    
+    eq_formatada = f"{rb} -> {pb}"
+    laudo = motor.consultoria_ia(eq_formatada, "Calculado via ChemPy", "Pendente")
+    return {
+        "equacao": eq_formatada,
+        "balanceamento": {"reagentes": rb, "produtos": pb},
+        "laudo": laudo
+    }
