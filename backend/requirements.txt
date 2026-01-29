@@ -1,8 +1,6 @@
 fastapi
 uvicorn
+supabase
 pydantic
-chempy
-groq
 python-dotenv
-pandas
-fpdf
+bcrypt
