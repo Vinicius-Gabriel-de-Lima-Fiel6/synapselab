@@ -37,8 +37,8 @@ const App = () => {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
       <form onSubmit={handleLogin} className="w-full max-w-md bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl text-center">
         <img src="https://i.ibb.co/6cKPZ5Pr/Gemini-Generated-Image-jes56ljes56ljes5.png" className="w-44 h-44 rounded-full mx-auto mb-4 object-cover" />
-        <h1 className="text-3xl font-bold text-white mb-2">LabSmartAI</h1>
-        <h3 className="text-slate-400 mb-6">Login Administrativo</h3>
+        <h1 className="text-3xl font-bold text-white mb-2">SynapseLab</h1>
+        <h3 className="text-slate-400 mb-6">Login Pessoal</h3>
         <input name="l_email" type="email" placeholder="E-mail Profissional" className="w-full bg-slate-800 p-3 rounded-lg text-white mb-4 outline-none focus:ring-2 focus:ring-green-500" required />
         <input name="l_pass" type="password" placeholder="Senha de Acesso" className="w-full bg-slate-800 p-3 rounded-lg text-white mb-6 outline-none focus:ring-2 focus:ring-green-500" required />
         <button className="w-full bg-green-600 py-3 rounded-lg text-white font-bold hover:bg-green-500 transition-all uppercase tracking-widest">Acessar Sistema</button>
