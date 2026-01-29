@@ -1,43 +1,34 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import calculadora as calc
-from motores_quimicos import MotorCalculoAvancado
+import os
+from chempy import balance_stoichiometry
+from groq import Groq
 
-app = FastAPI()
-motor = MotorCalculoAvancado()
+class MotorCalculoAvancado:
+    def __init__(self):
+        self.client = None
+        api_key = os.getenv("GROQ_API_KEY")
+        if api_key:
+            self.client = Groq(api_key=api_key)
+        self.modelo = "llama-3.3-70b-versatile"
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    def balancear_e_resolver(self, reagentes_str, produtos_str):
+        try:
+            reac_list = [r.strip() for r in reagentes_str.split('+')]
+            prod_list = [p.strip() for p in produtos_str.split('+')]
+            reac_bal, prod_bal = balance_stoichiometry(set(reac_list), set(prod_list))
+            return dict(reac_bal), dict(prod_bal), None
+        except Exception as e:
+            return None, None, str(e)
 
-class QuimicaRequest(BaseModel):
-    operacao: str
-    dados: dict
-
-@app.get("/")
-async def root():
-    return {"status": "Online"}
-
-@app.post("/auth/login")
-async def login(req: dict):
-    if req.get("email") == "admin@synapselab.com":
-        return {"logado": True, "user_data": {"username": "Admin", "org_name": "SynapseLab", "role": "Master"}}
-    return {"logado": False}
-
-@app.post("/api/analitica")
-async def rota_analitica(req: QuimicaRequest):
-    res = calc.calcular_analitica_fiel(req.operacao, req.dados)
-    return {"resultado": f"{res:.4f}"}
-
-@app.post("/api/estequiometria/analisar")
-async def analisar_ia(req: dict):
-    reac = req.get("reagentes")
-    prod = req.get("produtos")
-    rb, pb, err = motor.balancear_e_resolver(reac, prod)
-    if err: raise HTTPException(status_code=400, detail=err)
-    laudo = motor.consultoria_ia(f"{reac}->{prod}", "Cálculo pendente", "N/A")
-    return {"equacao": f"{rb} -> {pb}", "laudo": laudo}
+    def consultoria_ia(self, eq, limitante, rendimento):
+        if not self.client:
+            return "⚠️ Erro: Configuração de API Key ausente no servidor."
+        prompt = f"Analise técnica: Reação {eq}, Limitante {limitante}, Rendimento {rendimento}g. Foque em termodinâmica, segurança GHS e purificação."
+        try:
+            res = self.client.chat.completions.create(
+                model=self.modelo,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            return res.choices[0].message.content
+        except Exception as e:
+            return f"Erro na IA: {str(e)}"
