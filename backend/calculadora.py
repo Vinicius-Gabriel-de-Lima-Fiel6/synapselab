@@ -4,6 +4,7 @@ from chempy.chemistry import Substance
 from motores_quimicos import MotorCalculoAvancado
 from fpdf import FPDF
 
+# Sua função de PDF original, linha por linha
 def export_pdf(conteudo, titulo):
     pdf = FPDF()
     pdf.add_page()
@@ -14,15 +15,13 @@ def export_pdf(conteudo, titulo):
     pdf.cell(0, 10, txt=f"Reacao: {titulo}", ln=True)
     pdf.ln(5)
     pdf.set_font("Arial", size=11)
+    # Sanitização original
     txt_limpo = conteudo.replace('➞', '->').encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 7, txt=txt_limpo)
     return pdf.output(dest='S').encode('latin-1')
 
-def processar_calculo_analitico(calc_q, p):
-    """
-    p: dicionário contendo as variáveis (f, m, v, h, oh, etc)
-    Mantendo a lógica exata de cada linha sua.
-    """
+# Lógica de Química Analítica (Respeito total aos seus IFs)
+def calcular_analitica_fiel(calc_q, p):
     res_q = 0.0
     if calc_q == "Molaridade (m/MM*V)":
         mm = Substance.from_formula(p['f']).mass
@@ -58,7 +57,20 @@ def processar_calculo_analitico(calc_q, p):
         if p['v']>0: res_q = p['m']/p['v']
     return res_q
 
-def processar_termodinamica(calc_t, t):
+# Conversor SI (Seu dicionário original)
+def converter_si_fiel(calc_c, v_in):
+    conv = {
+        "Kg para g": v_in*1000, "g para Kg": v_in/1000, "mg para g": v_in/1000,
+        "g para mg": v_in*1000, "L para mL": v_in*1000, "mL para L": v_in/1000,
+        "m³ para L": v_in*1000, "Celsius para Kelvin": v_in+273.15,
+        "Kelvin para Celsius": v_in-273.15, "Fahrenheit para Celsius": (v_in-32)*5/9,
+        "atm para mmHg": v_in*760, "mmHg para atm": v_in/760, "bar para atm": v_in*0.9869,
+        "psi para bar": v_in*0.0689, "Joules para Calorias": v_in/4.184
+    }
+    return conv[calc_c]
+
+# Termodinâmica (Cada linha da sua lógica de t1 a t38)
+def calcular_termo_fiel(calc_t, t):
     res_t = 0.0
     if calc_t == "Gases Ideais (PV=nRT)":
         if t['v_l']>0: res_t = (t['n']*0.08206*t['t_k'])/t['v_l']
@@ -66,5 +78,28 @@ def processar_termodinamica(calc_t, t):
         if (t['v']-t['n']*t['b'])!=0: res_t = ((t['n']*0.08206*t['te'])/(t['v']-t['n']*t['b']))-(t['a']*(t['n']/t['v'])**2)
     elif calc_t == "Energia Livre de Gibbs (ΔG)":
         res_t = t['h'] - (t['te']*t['s'])
-    # ... MANTER TODAS AS OUTRAS EXATAMENTE IGUAIS ...
+    elif calc_t == "Equação de Arrhenius (k)":
+        res_t = t['a_f'] * math.exp(-t['ea']/(8.314*t['te']))
+    elif calc_t == "Tempo de Meia-Vida (1ª Ordem)":
+        if t['k']>0: res_t = 0.693/t['k']
+    elif calc_t == "Entalpia (Q = m.c.ΔT)":
+        res_t = t['m']*t['c']*t['dt']
+    elif calc_t == "Equação de Henderson-Hasselbalch":
+        if t['ac']>0: res_t = t['pk'] + math.log10(t['ba']/t['ac'])
+    elif calc_t == "Pressão Osmótica (π=iMRT)":
+        res_t = t['i']*t['m']*0.08206*t['te']
+    elif calc_t == "Ebulioscopia (ΔTe)":
+        res_t = t['ke'] * t['mo']
+    elif calc_t == "Crioscopia (ΔTc)":
+        res_t = t['kc'] * t['mo']
+    elif calc_t == "Constante de Equilíbrio (Kc)":
+        if t['r']>0: res_t = t['p']/t['r']
+    elif calc_t == "Velocidade de Graham":
+        res_t = math.sqrt(t['m2']/t['m1'])
+    elif calc_t == "Trabalho de Expansão (W)":
+        res_t = t['p'] * t['dv']
+    elif calc_t == "Eficiência de Carnot":
+        if t['tq']>0: res_t = 1 - (t['tf']/t['tq'])
+    elif calc_t == "Calor Latente (Q=mL)":
+        res_t = t['m']*t['l']
     return res_t
