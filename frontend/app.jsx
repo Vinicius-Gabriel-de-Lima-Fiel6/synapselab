@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { LayoutDashboard, Package, Beaker, BarChart3, Users, Settings, LogOut, ChevronDown, Table, FileText, ShieldCheck } from 'lucide-react';
 
-const API_URL = "SUA_URL_DA_VERCEL_BACKEND"; // Coloque aqui o link do backend
+const API_URL = "https://synapselab-ej2u-4z2wba635-vinicius-projects-de5d6056.vercel.app"; // Coloque aqui o link do backend
 
 const App = () => {
   const [logado, setLogado] = useState(false);
