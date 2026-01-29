@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { LayoutDashboard, Package, Beaker, BarChart3, Users, Settings, LogOut, ChevronDown, Table, FileText, ShieldCheck } from 'lucide-react';
 
-const API_URL = "https://synapselab-ej2u-4z2wba635-vinicius-projects-de5d6056.vercel.app"; // Coloque aqui o link do backend
+const API_URL = "https://synapselab-ej2u-4z2wba635-vinicius-projects-de5d6056.vercel.app";
 
 const App = () => {
   const [logado, setLogado] = useState(false);
@@ -12,25 +12,33 @@ const App = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const res = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: e.target.l_email.value, password: e.target.l_pass.value })
-    });
-    const data = await res.json();
-    if (data.logado) {
-      setUserData(data.user_data);
-      setLogado(true);
-      fetchMetrics(data.user_data.org_name);
-    } else {
-      alert("Dados incorretos.");
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: e.target.l_email.value, password: e.target.l_pass.value })
+      });
+      const data = await res.json();
+      if (data.logado) {
+        setUserData(data.user_data);
+        setLogado(true);
+        fetchMetrics(data.user_data.org_name);
+      } else {
+        alert("Dados incorretos.");
+      }
+    } catch (err) {
+      alert("Erro ao conectar ao servidor.");
     }
   };
 
   const fetchMetrics = async (org_name) => {
-    const res = await fetch(`${API_URL}/dashboard/metrics?org_name=${org_name}`);
-    const data = await res.json();
-    setMetrics(data);
+    try {
+      const res = await fetch(`${API_URL}/dashboard/metrics?org_name=${org_name}`);
+      const data = await res.json();
+      setMetrics(data);
+    } catch (err) {
+      console.error("Erro ao carregar métricas");
+    }
   };
 
   if (!logado) return (
@@ -109,8 +117,10 @@ const App = () => {
           </div>
         )}
         {selection !== "🏠 Dashboard" && (
-            <div className="h-full bg-white rounded-[2.5rem] border border-dashed border-slate-300 flex items-center justify-center text-slate-400 italic">
-                A aba {selection} está pronta para receber a integração de dados.
+            <div className="h-full bg-white rounded-[2.5rem] border border-dashed border-slate-300 flex items-center justify-center text-slate-400 italic text-center">
+                <div>
+                  <p className="text-lg">A aba <span className="font-bold text-slate-700">{selection}</span> está pronta para receber a integração de dados.</p>
+                </div>
             </div>
         )}
       </main>
@@ -118,4 +128,4 @@ const App = () => {
   );
 };
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+export default App;
